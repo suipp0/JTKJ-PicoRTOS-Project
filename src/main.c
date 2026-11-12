@@ -35,6 +35,7 @@ static void btn_fxn(uint gpio, uint32_t eventMask) {
 
 static void sensor_task(void *arg){
     (void)arg;
+    float ax, ay, az, gx, gy, gz, t;
     // Tehtävä 2: Alusta valoisuusanturi. Etsi SDK-dokumentaatiosta sopiva funktio.
     // Exercise 2: Init the light sensor. Find in the SDK documentation the adequate function.
    
@@ -44,10 +45,15 @@ static void sensor_task(void *arg){
         //             
         // Exercise 2: Modify with application code here. Comment following line.
         //             Read sensor data and print it out as string; 
-        tight_loop_contents(); 
 
-
-   
+// Imu anturin sensoridatan lukeminen ja tulostaminen
+        if (ICM42670_read_sensor_data(&ax, &ay, &az, &gx, &gy, &gz, &t) == 0) {  
+            printf("Accel: X=%f, Y=%f, Z=%f | Gyro: X=%f, Y=%f, Z=%f| Temp: %2.2f°C\n", ax, ay, az, gx, gy, gz, t);
+        }
+        else {
+            printf("Failed to read imu data\n");
+        }
+        vTaskDelay(pdMS_TO_TICKS(2000));
 
 
         // Tehtävä 3:  Muokkaa aiemmin Tehtävässä 2 tehtyä koodia ylempänä.
@@ -58,10 +64,6 @@ static void sensor_task(void *arg){
         //             If you are in adequate state, instead of printing save the sensor value 
         //             into the global variable.
         //             After that, modify state
-
-
-
-
 
         
         // Exercise 2. Just for sanity check. Please, comment this out
@@ -111,7 +113,7 @@ static void print_task(void *arg){
 
         // Exercise 3. Just for sanity check. Please, comment this out
         // Tehtävä 3: Just for sanity check. Please, comment this out
-        printf("printTask\n");
+        //printf("printTask\n");
         
         // Do not remove this
         vTaskDelay(pdMS_TO_TICKS(1000));
@@ -160,7 +162,8 @@ int main() {
     //             Keskeytyskäsittelijä on määritelty yläpuolella nimellä btn_fxn
 
 
-
+    init_ICM42670();
+    ICM42670_start_with_default_values();
     
     
     TaskHandle_t hSensorTask, hPrintTask, hUSB = NULL;
