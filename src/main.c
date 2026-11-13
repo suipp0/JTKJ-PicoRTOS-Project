@@ -55,7 +55,12 @@ static void sensor_task(void *arg){
         }
         vTaskDelay(pdMS_TO_TICKS(2000));
 
-
+        if (ax <= 0.5 && ay >= -0.5 && az >= 0.5) {
+            printf(".");
+        }
+        else if (ax <= 0.5 && ay <= -0.5 && az <= 0.5) {
+            printf("-");
+        }
         // Tehtävä 3:  Muokkaa aiemmin Tehtävässä 2 tehtyä koodia ylempänä.
         //             Jos olet oikeassa tilassa, tallenna anturin arvo tulostamisen sijaan
         //             globaaliin muuttujaan.
