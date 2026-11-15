@@ -27,11 +27,16 @@ enum state programState = WAITING;
 // Tehtävä 3: Valoisuuden globaali muuttuja
 // Exercise 3: Global variable for ambient light
 uint32_t ambientLight;
+static volatile char current_symbol = '\0';
+static volatile uint8_t button1_pressed = 0;
 
 static void btn_fxn(uint gpio, uint32_t eventMask) {
+    if (gpio  == BUTTON1) {
+        button1_pressed = 1;
+    }
+}
     // Tehtävä 1: Vaihda LEDin tila käyttämällä TKJHAT SDK:n sopivaa funktiota.
     // Exercise 1: Toggle the LED using the appropriate function from the TKJHAT SDK.
-}
 
 static void sensor_task(void *arg){
     (void)arg;
@@ -49,18 +54,17 @@ static void sensor_task(void *arg){
 // Imu anturin sensoridatan lukeminen ja tulostaminen
         if (ICM42670_read_sensor_data(&ax, &ay, &az, &gx, &gy, &gz, &t) == 0) {  
             printf("Accel: X=%f, Y=%f, Z=%f | Gyro: X=%f, Y=%f, Z=%f| Temp: %2.2f°C\n", ax, ay, az, gx, gy, gz, t);
+            if (ax <= 0.5 && ay >= -0.5 && az >= 0.5) {
+                current_symbol = '.';
+            }
+            else if (ax <= 0.5 && ay <= -0.5 && az <= 0.5) {
+                current_symbol = '-';
+            }
         }
         else {
             printf("Failed to read imu data\n");
         }
-        vTaskDelay(pdMS_TO_TICKS(2000));
-
-        if (ax <= 0.5 && ay >= -0.5 && az >= 0.5) {
-            printf(".");
-        }
-        else if (ax <= 0.5 && ay <= -0.5 && az <= 0.5) {
-            printf("-");
-        }
+    
         // Tehtävä 3:  Muokkaa aiemmin Tehtävässä 2 tehtyä koodia ylempänä.
         //             Jos olet oikeassa tilassa, tallenna anturin arvo tulostamisen sijaan
         //             globaaliin muuttujaan.
@@ -73,10 +77,10 @@ static void sensor_task(void *arg){
         
         // Exercise 2. Just for sanity check. Please, comment this out
         // Tehtävä 2: Just for sanity check. Please, comment this out
-        printf("sensorTask\n");
+        //printf("sensorTask\n");
 
         // Do not remove this
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 
@@ -84,14 +88,21 @@ static void print_task(void *arg){
     (void)arg;
     
     while(1){
-        
+        if(button1_pressed == 1) {
+            printf("%c", current_symbol);
+            button1_pressed = 0;
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(200));
+    }
+
         // Tehtävä 3: Kun tila on oikea, tulosta sensoridata merkkijonossa serial-monitor-ikkunaan
         //            Muista tilamuutos
         //            Älä unohda kommentoida seuraavaa koodiriviä.
         // Exercise 3: Print out sensor data as string to serial monitor if the state is correct
         //             Remember to modify state
         //             Do not forget to comment next line of code.
-        tight_loop_contents();
+        //tight_loop_contents();
         
 
 
@@ -122,7 +133,6 @@ static void print_task(void *arg){
         
         // Do not remove this
         vTaskDelay(pdMS_TO_TICKS(1000));
-    }
 }
 
 
@@ -166,11 +176,11 @@ int main() {
     // Tehtävä 1:  Alusta painike ja LEd ja rekisteröi vastaava keskeytys.
     //             Keskeytyskäsittelijä on määritelty yläpuolella nimellä btn_fxn
 
-
     init_ICM42670();
     ICM42670_start_with_default_values();
     
-    
+    init_sw1();
+
     TaskHandle_t hSensorTask, hPrintTask, hUSB = NULL;
 
     // Exercise 4: Uncomment this xTaskCreate to create the task that enables dual USB communication.
