@@ -29,10 +29,14 @@ enum state programState = WAITING;
 uint32_t ambientLight;
 static volatile char current_symbol = '\0';
 static volatile uint8_t button1_pressed = 0;
+static volatile uint8_t button2_pressed = 0;
 
 static void btn_fxn(uint gpio, uint32_t eventMask) {
     if (gpio  == BUTTON1) {
-        button1_pressed = 1;
+        button1_pressed = true;
+    }
+     else if (gpio == BUTTON2) {
+        button2_pressed = true;
     }
 }
     // Tehtävä 1: Vaihda LEDin tila käyttämällä TKJHAT SDK:n sopivaa funktiota.
@@ -60,11 +64,14 @@ static void sensor_task(void *arg){
             else if (ax <= 0.5 && ay <= -0.5 && az <= 0.5) {
                 current_symbol = '-';
             }
+            /*else if (ax && ay && az) {
+                current_symbol = ' ';
+            }*/
         }
-        else {
+        else 
             printf("Failed to read imu data\n");
         }
-    
+
         // Tehtävä 3:  Muokkaa aiemmin Tehtävässä 2 tehtyä koodia ylempänä.
         //             Jos olet oikeassa tilassa, tallenna anturin arvo tulostamisen sijaan
         //             globaaliin muuttujaan.
@@ -81,18 +88,20 @@ static void sensor_task(void *arg){
 
         // Do not remove this
         vTaskDelay(pdMS_TO_TICKS(500));
-    }
 }
 
 static void print_task(void *arg){
     (void)arg;
     
     while(1){
-        if(button1_pressed == 1) {
+        if (button1_pressed == true) {
             printf("%c", current_symbol);
-            button1_pressed = 0;
+            button1_pressed = false;
         }
-
+        else if (button2_pressed == true) {
+            printf("(välilyönti)");
+            button2_pressed = false;
+        }
         vTaskDelay(pdMS_TO_TICKS(200));
     }
 
@@ -171,6 +180,8 @@ int main() {
     init_hat_sdk();
     sleep_ms(300); //Wait some time so initialization of USB and hat is done.
 
+    gpio_set_irq_enabled_with_callback(BUTTON1, GPIO_IRQ_EDGE_RISE, true, btn_fxn);
+    gpio_set_irq_enabled_with_callback(BUTTON2, GPIO_IRQ_EDGE_RISE, true, btn_fxn);
     // Exercise 1: Initialize the button and the led and define an register the corresponding interrupton.
     //             Interruption handler is defined up as btn_fxn
     // Tehtävä 1:  Alusta painike ja LEd ja rekisteröi vastaava keskeytys.
