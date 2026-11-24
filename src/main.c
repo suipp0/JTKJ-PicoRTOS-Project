@@ -57,21 +57,27 @@ static void sensor_task(void *arg){
 
 // Imu anturin sensoridatan lukeminen ja tulostaminen
         if (ICM42670_read_sensor_data(&ax, &ay, &az, &gx, &gy, &gz, &t) == 0) {  
-            printf("Accel: X=%f, Y=%f, Z=%f | Gyro: X=%f, Y=%f, Z=%f| Temp: %2.2f°C\n", ax, ay, az, gx, gy, gz, t);
+            //printf("Accel: X=%f, Y=%f, Z=%f | Gyro: X=%f, Y=%f, Z=%f| Temp: %2.2f°C\n", ax, ay, az, gx, gy, gz, t);
+
+            // tulostaa pisteen, kun pico on vaakatasossa
             if (ax <= 0.5 && ay >= -0.5 && az >= 0.5) {
                 current_symbol = '.';
             }
+            //tulostaa viivan, kun pico on pystysuorassa
             else if (ax <= 0.5 && ay <= -0.5 && az <= 0.5) {
                 current_symbol = '-';
             }
-            /*else if (ax && ay && az) {
+            else if (ax >= 0.5 && ay <= 0.5 && az <= 0.5) {
                 current_symbol = ' ';
-            }*/
+            }
+            else if (ax <= -0.5 && ay <= 0.5 && az <= 0.5) {
+                current_symbol = ' ';
+           }
         }
-        else 
-            printf("Failed to read imu data\n");
+        else {
+            //printf("Failed to read imu data\n");
         }
-
+    
         // Tehtävä 3:  Muokkaa aiemmin Tehtävässä 2 tehtyä koodia ylempänä.
         //             Jos olet oikeassa tilassa, tallenna anturin arvo tulostamisen sijaan
         //             globaaliin muuttujaan.
@@ -88,6 +94,7 @@ static void sensor_task(void *arg){
 
         // Do not remove this
         vTaskDelay(pdMS_TO_TICKS(500));
+    }
 }
 
 static void print_task(void *arg){
@@ -99,7 +106,7 @@ static void print_task(void *arg){
             button1_pressed = false;
         }
         else if (button2_pressed == true) {
-            printf("(välilyönti)");
+            printf("  \n");
             button2_pressed = false;
         }
         vTaskDelay(pdMS_TO_TICKS(200));
@@ -191,6 +198,7 @@ int main() {
     ICM42670_start_with_default_values();
     
     init_sw1();
+    init_sw2();
 
     TaskHandle_t hSensorTask, hPrintTask, hUSB = NULL;
 
