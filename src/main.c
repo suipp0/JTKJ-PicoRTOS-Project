@@ -10,173 +10,89 @@
 
 #include "tkjhat/sdk.h"
 
-// Exercise 4. Include the libraries necessaries to use the usb-serial-debug, and tinyusb
-// Tehtävä 4 . Lisää usb-serial-debugin ja tinyusbin käyttämiseen tarvittavat kirjastot.
-
-
 
 #define DEFAULT_STACK_SIZE 2048
 #define CDC_ITF_TX      1
 
-
-// Tehtävä 3: Tilakoneen esittely Add missing states.
-// Exercise 3: Definition of the state machine. Add missing states.
 enum state { WAITING=1};
 enum state programState = WAITING;
 
-// Tehtävä 3: Valoisuuden globaali muuttuja
-// Exercise 3: Global variable for ambient light
 uint32_t ambientLight;
 static volatile char current_symbol = '\0';
 static volatile uint8_t button1_pressed = 0;
 static volatile uint8_t button2_pressed = 0;
 
 static void btn_fxn(uint gpio, uint32_t eventMask) {
+    // Napin 1 painallus välitetään print_task-tehtävälle
     if (gpio  == BUTTON1) {
         button1_pressed = true;
     }
-     else if (gpio == BUTTON2) {
+    // Napin 2 painallus välitetään print_task-tehtävälle
+    else if (gpio == BUTTON2) {
         button2_pressed = true;
     }
 }
-    // Tehtävä 1: Vaihda LEDin tila käyttämällä TKJHAT SDK:n sopivaa funktiota.
-    // Exercise 1: Toggle the LED using the appropriate function from the TKJHAT SDK.
 
-static void sensor_task(void *arg){
+static void sensor_task(void *arg) {
     (void)arg;
     float ax, ay, az, gx, gy, gz, t;
-    // Tehtävä 2: Alusta valoisuusanturi. Etsi SDK-dokumentaatiosta sopiva funktio.
-    // Exercise 2: Init the light sensor. Find in the SDK documentation the adequate function.
-   
+ 
     for(;;){
-        
-        // Tehtävä 2: Muokkaa tästä eteenpäin sovelluskoodilla. Kommentoi seuraava rivi.
-        //             
-        // Exercise 2: Modify with application code here. Comment following line.
-        //             Read sensor data and print it out as string; 
 
-// Imu anturin sensoridatan lukeminen ja tulostaminen
-        if (ICM42670_read_sensor_data(&ax, &ay, &az, &gx, &gy, &gz, &t) == 0) {  
+        // Imu anturin sensoridatan lukeminen ja mittaaminen
+        if (ICM42670_read_sensor_data(&ax, &ay, &az, &gx, &gy, &gz, &t) == 0) {
+            // Testituloksia varten printf-funktio
             //printf("Accel: X=%f, Y=%f, Z=%f | Gyro: X=%f, Y=%f, Z=%f| Temp: %2.2f°C\n", ax, ay, az, gx, gy, gz, t);
 
-            // tulostaa pisteen, kun pico on vaakatasossa
+            // Tulostaa pisteen, kun pico on vaakatasossa
             if (ax <= 0.5 && ay >= -0.5 && az >= 0.5) {
                 current_symbol = '.';
             }
-            //tulostaa viivan, kun pico on pystysuorassa
+            // Tulostaa viivan, kun pico on pystysuorassa
             else if (ax <= 0.5 && ay <= -0.5 && az <= 0.5) {
                 current_symbol = '-';
+            // Tulostaa välilyönnin, kun pico on kallistettu 90 astetta vasempaan
             }
             else if (ax >= 0.5 && ay <= 0.5 && az <= 0.5) {
                 current_symbol = ' ';
+            // Tulostaa välilyönnin, kun pico on kallistettu 90 astetta oikeaan
             }
             else if (ax <= -0.5 && ay <= 0.5 && az <= 0.5) {
                 current_symbol = ' ';
            }
         }
+        // Jos IMU:ta ei pystytä lukemaan, tulostetaan virheviesti
         else {
-            //printf("Failed to read imu data\n");
+            printf("Failed to read imu data\n");
         }
-    
-        // Tehtävä 3:  Muokkaa aiemmin Tehtävässä 2 tehtyä koodia ylempänä.
-        //             Jos olet oikeassa tilassa, tallenna anturin arvo tulostamisen sijaan
-        //             globaaliin muuttujaan.
-        //             Sen jälkeen muuta tilaa.
-        // Exercise 3: Modify previous code done for Exercise 2, in previous lines. 
-        //             If you are in adequate state, instead of printing save the sensor value 
-        //             into the global variable.
-        //             After that, modify state
-
-        
-        // Exercise 2. Just for sanity check. Please, comment this out
-        // Tehtävä 2: Just for sanity check. Please, comment this out
-        //printf("sensorTask\n");
 
         // Do not remove this
         vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 
-static void print_task(void *arg){
+static void print_task(void *arg) {
     (void)arg;
     
-    while(1){
+    while(1) {
+        // Tulostaa merkin riippuen napin painalluksen aikaisesta asennosta
         if (button1_pressed == true) {
             printf("%c", current_symbol);
             button1_pressed = false;
         }
+        // Nappia 2 painettaessa viesti päätetään kahteen välilyöntiin ja rivinvaihtomerkkiin
         else if (button2_pressed == true) {
             printf("  \n");
             button2_pressed = false;
         }
         vTaskDelay(pdMS_TO_TICKS(200));
     }
-
-        // Tehtävä 3: Kun tila on oikea, tulosta sensoridata merkkijonossa serial-monitor-ikkunaan
-        //            Muista tilamuutos
-        //            Älä unohda kommentoida seuraavaa koodiriviä.
-        // Exercise 3: Print out sensor data as string to serial monitor if the state is correct
-        //             Remember to modify state
-        //             Do not forget to comment next line of code.
-        //tight_loop_contents();
-        
-
-
-        
-        // Exercise 4. Use usb_serial_print() instead of printf() for debug output
-        //             produced after the USB serial library has been initialized.
-        //             Do not replace error messages that can execute before usb_serial_init().
-        //             Use the TinyUSB library to send data through the other serial port (CDC 1).
-        //             You can use the functions at https://github.com/hathach/tinyusb/blob/master/src/class/cdc/cdc_device.h
-        //             You can find an example at hello_dual_cdc
-        //             The data written using this should be provided using csv
-        //             timestamp, illuminance
-        // Tehtävä 4. Käytä usb_serial_print()-funktiota printf()-funktion sijaan
-        //            debug-tulostukseen sen jälkeen, kun USB-sarjaliikennekirjasto on alustettu.
-        //            Älä korvaa virheilmoituksia, jotka voivat suorittua ennen usb_serial_init()-kutsua.
-        //            Käytä TinyUSB-kirjastoa datan lähettämiseen toisen sarjaportin (CDC 1) kautta.
-        //            Voit käyttää funktioita: https://github.com/hathach/tinyusb/blob/master/src/class/cdc/cdc_device.h
-        //            Esimerkki löytyy hello_dual_cdc-projektista.
-        //            Tällä menetelmällä kirjoitettu data tulee antaa CSV-muodossa:
-        //            timestamp, illuminance
-
-
-
-
-        // Exercise 3. Just for sanity check. Please, comment this out
-        // Tehtävä 3: Just for sanity check. Please, comment this out
-        //printf("printTask\n");
-        
         // Do not remove this
         vTaskDelay(pdMS_TO_TICKS(1000));
 }
 
-
-// Exercise 4: Uncomment the following line to activate the TinyUSB library.  
-// Tehtävä 4:  Poista seuraavan rivin kommentointi aktivoidaksesi TinyUSB-kirjaston. 
-
-/*
-static void usbTask(void *arg) {
-    (void)arg;
-    while (1) {
-        tud_task();              // With FreeRTOS wait for events
-                                 // Do not add vTaskDelay. 
-    }
-}*/
-
 int main() {
-
-    // Exercise 4: Comment the statement stdio_init_all(); 
-    //             Instead, add AT THE END OF MAIN (before vTaskStartScheduler();) adequate statements to enable the TinyUSB library and the usb-serial-debug.
-    //             You can see hello_dual_cdc for help
-    //             In CMakeLists.txt add usb_serial_debug to target_link_libraries.
-    //             In CMakeLists.txt deactivate pico_enable_stdio_usb
-    // Tehtävä 4:  Kommentoi lause stdio_init_all();
-    //             Sen sijaan lisää MAIN LOPPUUN (ennen vTaskStartScheduler();) tarvittavat komennot aktivoidaksesi TinyUSB-kirjaston ja usb-serial-debugin.
-    //             Voit katsoa apua esimerkistä hello_dual_cdc.
-    //             Lisää CMakeLists.txt-tiedoston target_link_libraries-kohtaan usb_serial_debug.
-    //             Poista CMakeLists.txt-tiedostosta käytöstä pico_enable_stdio_usb
-
+// Alustetaan anturit:
     stdio_init_all();
 
     // Uncomment this lines if you want to wait till the serial monitor is connected
@@ -187,16 +103,15 @@ int main() {
     init_hat_sdk();
     sleep_ms(300); //Wait some time so initialization of USB and hat is done.
 
+    // Otetaan käyttöön painikkeiden nousevan reunan keskeytykset
     gpio_set_irq_enabled_with_callback(BUTTON1, GPIO_IRQ_EDGE_RISE, true, btn_fxn);
     gpio_set_irq_enabled_with_callback(BUTTON2, GPIO_IRQ_EDGE_RISE, true, btn_fxn);
-    // Exercise 1: Initialize the button and the led and define an register the corresponding interrupton.
-    //             Interruption handler is defined up as btn_fxn
-    // Tehtävä 1:  Alusta painike ja LEd ja rekisteröi vastaava keskeytys.
-    //             Keskeytyskäsittelijä on määritelty yläpuolella nimellä btn_fxn
 
+    // Alustetaan ja käynnistetään IMU-anturi
     init_ICM42670();
     ICM42670_start_with_default_values();
     
+    // Alustetaan painikkeet
     init_sw1();
     init_sw2();
 
@@ -237,11 +152,9 @@ int main() {
         printf("Print Task creation failed\n");
         return 0;
     }
-
     // Start the scheduler (never returns)
     vTaskStartScheduler();
     
     // Never reach this line.
     return 0;
 }
-
