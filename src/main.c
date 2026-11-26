@@ -1,4 +1,8 @@
-
+// Miikka Rautio, Santeri Alapudas
+// Ryhmän kolmas jäsen (Markku Koivumaa) ei suorittanut lopputyötä tänä vuonna
+// Pisteiden jako: Miikka: 4p , Santeri: 2p
+// Miikka toteutti molemmat tehtävät (sensor_task ja print_task), asentojen tunnistuksen, globaalin muuttujan current_symbol, sekä main funktion toteutusta
+// Santeri toteutti keskeytyskäsittelijän, kaksi globaalia muuttujaa (button1_pressed, button2_pressed), sekä main funktion toteutusta
 #include <stdio.h>
 #include <string.h>
 
@@ -17,7 +21,7 @@
 enum state { WAITING=1};
 enum state programState = WAITING;
 
-uint32_t ambientLight;
+// Globaalit muuttujat:
 static volatile char current_symbol = '\0';
 static volatile uint8_t button1_pressed = 0;
 static volatile uint8_t button2_pressed = 0;
@@ -44,19 +48,19 @@ static void sensor_task(void *arg) {
             // Testituloksia varten printf-funktio
             //printf("Accel: X=%f, Y=%f, Z=%f | Gyro: X=%f, Y=%f, Z=%f| Temp: %2.2f°C\n", ax, ay, az, gx, gy, gz, t);
 
-            // Tulostaa pisteen, kun pico on vaakatasossa
+            // Tallentaa globaaliin muuttujaan pisteen, kun pico on vaakatasossa
             if (ax <= 0.5 && ay >= -0.5 && az >= 0.5) {
                 current_symbol = '.';
             }
-            // Tulostaa viivan, kun pico on pystysuorassa
+            // Tallentaa globaaliin muuttujaan viivan, kun pico on pystysuorassa
             else if (ax <= 0.5 && ay <= -0.5 && az <= 0.5) {
                 current_symbol = '-';
-            // Tulostaa välilyönnin, kun pico on kallistettu 90 astetta vasempaan
             }
+            // Tallentaa globaaliin muuttujaan välilyönnin, kun pico on kallistettu 90 astetta oikeaan
             else if (ax >= 0.5 && ay <= 0.5 && az <= 0.5) {
                 current_symbol = ' ';
-            // Tulostaa välilyönnin, kun pico on kallistettu 90 astetta oikeaan
             }
+            // Tallentaa globaaliin muuttujaan välilyönnin, kun pico on kallistettu 90 astetta vasempaan
             else if (ax <= -0.5 && ay <= 0.5 && az <= 0.5) {
                 current_symbol = ' ';
            }
@@ -75,7 +79,7 @@ static void print_task(void *arg) {
     (void)arg;
     
     while(1) {
-        // Tulostaa merkin riippuen napin painalluksen aikaisesta asennosta
+        // Tulostaa merkin riippuen napin 1 painalluksen aikaisesta asennosta
         if (button1_pressed == true) {
             printf("%c", current_symbol);
             button1_pressed = false;
@@ -92,7 +96,7 @@ static void print_task(void *arg) {
 }
 
 int main() {
-// Alustetaan anturit:
+    // Alustetaan ohjelmaan liitetyt syöttö- ja tulostuskanavat.
     stdio_init_all();
 
     // Uncomment this lines if you want to wait till the serial monitor is connected
@@ -103,15 +107,15 @@ int main() {
     init_hat_sdk();
     sleep_ms(300); //Wait some time so initialization of USB and hat is done.
 
-    // Otetaan käyttöön painikkeiden nousevan reunan keskeytykset
+    // Otetaan käyttöön painikkeiden nousevan reunan keskeytykset:
     gpio_set_irq_enabled_with_callback(BUTTON1, GPIO_IRQ_EDGE_RISE, true, btn_fxn);
     gpio_set_irq_enabled_with_callback(BUTTON2, GPIO_IRQ_EDGE_RISE, true, btn_fxn);
 
-    // Alustetaan ja käynnistetään IMU-anturi
+    // Alustetaan ja käynnistetään IMU-anturi:
     init_ICM42670();
     ICM42670_start_with_default_values();
     
-    // Alustetaan painikkeet
+    // Alustetaan painikkeet:
     init_sw1();
     init_sw2();
 
